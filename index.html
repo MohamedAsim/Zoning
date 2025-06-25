@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egypt Industrial Zones - Enhanced Interactive Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-number {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stats-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .control-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .map-view-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .view-option {
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 14px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .view-option:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .view-option.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .toggle-switch {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .legend h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .legend-item:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .legend-item.active {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: #667eea;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 12px;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .legend-text {
+            flex: 1;
+            font-size: 14px;
+            color: #495057;
+            font-weight: 500;
+        }
+
+        .legend-count {
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .map-container.expanded {
+            margin-left: 0;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .toggle-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            color: #667eea;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        /* Custom popup styles */
+        .custom-popup-wrapper .leaflet-popup-content-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            border: none;
+        }
+
+        .custom-popup-wrapper .leaflet-popup-content {
+            margin: 0;
+            padding: 0;
+        }
+
+        .custom-popup {
+            min-width: 280px;
+        }
+
+        .popup-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px 12px 0 0;
+            font-weight: bold;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .popup-content {
+            padding: 20px;
+        }
+
+        .popup-detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .popup-detail:last-child {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+
+        .popup-label {
+            font-weight: 600;
+            color: #495057;
+            font-size: 13px;
+        }
+
+        .popup-value {
+            color: #6c757d;
+            font-size: 13px;
+            text-align: right;
+            max-width: 60%;
+        }
+
+        .zone-type-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: absolute;
+                height: 100%;
+                z-index: 1002;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+
+            .sidebar:not(.collapsed) {
+                transform: translateX(0);
+            }
+
+            .map-container {
+                width: 100%;
+            }
+
+            .toggle-btn {
+                display: block;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .map-view-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .toggle-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-content">
+                <div class="header">
+                    <h1><i class="fas fa-industry"></i> Egypt Industrial Zones</h1>
+                    <p>Interactive map of industrial and economic zones</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stats-card">
+                        <div class="stats-number">35</div>
+                        <div class="stats-label">Total Zones</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-number" id="visibleCount">35</div>
+                        <div class="stats-label">Visible</div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-map"></i> Map View Options</h3>
+                    <div class="map-view-options">
+                        <div class="view-option active" data-view="osm">
+                            <i class="fas fa-map"></i> Standard
+                        </div>
+                        <div class="view-option" data-view="satellite">
+                            <i class="fas fa-satellite"></i> Satellite
+                        </div>
+                        <div class="view-option" data-view="terrain">
+                            <i class="fas fa-mountain"></i> Terrain
+                        </div>
+                        <div class="view-option" data-view="minimal">
+                            <i class="fas fa-circle"></i> Minimal
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-cog"></i> Display Options</h3>
+                    <div class="toggle-switch">
+                        <span class="toggle-label">Show Zone Names</span>
+                        <label class="switch">
+                            <input type="checkbox" id="showNamesToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-switch">
+                        <span class="toggle-label">Cluster Markers</span>
+                        <label class="switch">
+                            <input type="checkbox" id="clusterToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="search-container">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search zones...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <div class="legend">
+                    <h3><i class="fas fa-layer-group"></i> Zone Categories</h3>
+                    <div class="legend-item active" data-type="all">
+                        <div class="legend-color" style="background: linear-gradient(45deg, #3498db, #9b59b6, #27ae60, #f39c12);"></div>
+                        <span class="legend-text">All Zones</span>
+                        <span class="legend-count">35</span>
+                    </div>
+                    <div class="legend-item" data-type="PFZ">
+                        <div class="legend-color" style="background: #3498db;"></div>
+                        <span class="legend-text">Public Free Zones</span>
+                        <span class="legend-count">8</span>
+                    </div>
+                    <div class="legend-item" data-type="SEZ">
+                        <div class="legend-color" style="background: #9b59b6;"></div>
+                        <span class="legend-text">Special Economic Zones</span>
+                        <span class="legend-count">4</span>
+                    </div>
+                    <div class="legend-item" data-type="Investment">
+                        <div class="legend-color" style="background: #27ae60;"></div>
+                        <span class="legend-text">Investment Zones</span>
+                        <span class="legend-count">13</span>
+                    </div>
+                    <div class="legend-item" data-type="Private">
+                        <div class="legend-color" style="background: #f39c12;"></div>
+                        <span class="legend-text">Private Industrial Parks</span>
+                        <span class="legend-count">10</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="map-container" id="mapContainer">
+            <button class="toggle-btn" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing map...');
+            
+            // Zone data - UPDATED WITH CORRECTED POLARIS ZONES, REMOVED SPECIFIED ZONES, AND VALIDATED PRICING
+            const zonesData = [
+                {"name": "Alexandria Free Zone", "type": "PFZ", "latitude": 31.2001, "longitude": 29.9187, "color": "blue", "operator": "GAFI", "totalArea": "2,300,000 sqm", "slotsStartFrom": "500 sqm", "pricePerSqm": "$15/sqm/year"},
+                {"name": "Cairo Free Zone", "type": "PFZ", "latitude": 30.0444, "longitude": 31.2357, "color": "blue", "operator": "GAFI", "totalArea": "1,800,000 sqm", "slotsStartFrom": "300 sqm", "pricePerSqm": "$18/sqm/year"},
+                {"name": "Port Said Free Zone", "type": "PFZ", "latitude": 31.2653, "longitude": 32.3019, "color": "blue", "operator": "GAFI", "totalArea": "3,500,000 sqm", "slotsStartFrom": "400 sqm", "pricePerSqm": "$12/sqm/year"},
+                {"name": "Suez Free Zone", "type": "PFZ", "latitude": 29.9668, "longitude": 32.5498, "color": "blue", "operator": "GAFI", "totalArea": "2,800,000 sqm", "slotsStartFrom": "600 sqm", "pricePerSqm": "$10/sqm/year"},
+                {"name": "Damietta Free Zone", "type": "PFZ", "latitude": 31.4165, "longitude": 31.8133, "color": "blue", "operator": "GAFI", "totalArea": "1,200,000 sqm", "slotsStartFrom": "250 sqm", "pricePerSqm": "$8/sqm/year"},
+                {"name": "Ismailia Free Zone", "type": "PFZ", "latitude": 30.5965, "longitude": 32.2715, "color": "blue", "operator": "GAFI", "totalArea": "900,000 sqm", "slotsStartFrom": "200 sqm", "pricePerSqm": "$7/sqm/year"},
+                {"name": "Nasr City Free Zone", "type": "PFZ", "latitude": 30.0626, "longitude": 31.3219, "color": "blue", "operator": "GAFI", "totalArea": "800,000 sqm", "slotsStartFrom": "150 sqm", "pricePerSqm": "$25/sqm/year"},
+                {"name": "Media Production City Free Zone", "type": "PFZ", "latitude": 30.0131, "longitude": 31.2089, "color": "blue", "operator": "GAFI", "totalArea": "1,600,000 sqm", "slotsStartFrom": "100 sqm", "pricePerSqm": "$30/sqm/year"},
+                
+                {"name": "Suez Canal Economic Zone", "type": "SEZ", "latitude": 30.8025, "longitude": 32.3, "color": "purple", "operator": "SCZone Authority", "totalArea": "460,000,000 sqm", "slotsStartFrom": "5,000 sqm", "pricePerSqm": "$12/sqm/year"},
+                {"name": "Golden Triangle SEZ", "type": "SEZ", "latitude": 26.8206, "longitude": 31.8025, "color": "purple", "operator": "GAFI", "totalArea": "2,000,000,000 sqm", "slotsStartFrom": "10,000 sqm", "pricePerSqm": "$5/sqm/year"},
+                {"name": "East Port Said SEZ", "type": "SEZ", "latitude": 31.2889, "longitude": 32.3262, "color": "purple", "operator": "SCZone Authority", "totalArea": "40,000,000 sqm", "slotsStartFrom": "3,000 sqm", "pricePerSqm": "$15/sqm/year"},
+                {"name": "Ain Sokhna SEZ", "type": "SEZ", "latitude": 29.6000, "longitude": 32.3500, "color": "purple", "operator": "SCZone Authority", "totalArea": "22,000,000 sqm", "slotsStartFrom": "2,000 sqm", "pricePerSqm": "$18/sqm/year"},
+                
+                {"name": "10th of Ramadan Industrial City", "type": "Investment", "latitude": 30.3128, "longitude": 31.7421, "color": "green", "operator": "GAFI", "totalArea": "230,000,000 sqm", "slotsStartFrom": "1,000 sqm", "pricePerSqm": "EGP 80/sqm/year"},
+                {"name": "6th of October Industrial City", "type": "Investment", "latitude": 29.9097, "longitude": 30.9746, "color": "green", "operator": "GAFI", "totalArea": "119,000,000 sqm", "slotsStartFrom": "800 sqm", "pricePerSqm": "EGP 100/sqm/year"},
+                {"name": "Sadat Industrial City", "type": "Investment", "latitude": 30.3667, "longitude": 30.4167, "color": "green", "operator": "GAFI", "totalArea": "45,000,000 sqm", "slotsStartFrom": "600 sqm", "pricePerSqm": "EGP 70/sqm/year"},
+                {"name": "Badr Industrial City", "type": "Investment", "latitude": 30.1833, "longitude": 31.7167, "color": "green", "operator": "GAFI", "totalArea": "35,000,000 sqm", "slotsStartFrom": "500 sqm", "pricePerSqm": "EGP 85/sqm/year"},
+                {"name": "Borg El Arab Industrial City", "type": "Investment", "latitude": 30.9167, "longitude": 29.6333, "color": "green", "operator": "GAFI", "totalArea": "28,000,000 sqm", "slotsStartFrom": "700 sqm", "pricePerSqm": "EGP 60/sqm/year"},
+                {"name": "Ameriya Industrial Zone", "type": "Investment", "latitude": 31.0065, "longitude": 29.8150, "color": "green", "operator": "GAFI", "totalArea": "12,000,000 sqm", "slotsStartFrom": "400 sqm", "pricePerSqm": "EGP 55/sqm/year"},
+                {"name": "Dashlut Industrial Zone", "type": "Investment", "latitude": 27.1833, "longitude": 31.1667, "color": "green", "operator": "GAFI", "totalArea": "8,500,000 sqm", "slotsStartFrom": "300 sqm", "pricePerSqm": "EGP 45/sqm/year"},
+                {"name": "15th Of May City Industrial Zone", "type": "Investment", "latitude": 29.8667, "longitude": 31.2833, "color": "green", "operator": "GAFI", "totalArea": "15,000,000 sqm", "slotsStartFrom": "500 sqm", "pricePerSqm": "EGP 110/sqm/year"},
+                {"name": "Katameya Industrial Zone", "type": "Investment", "latitude": 29.9833, "longitude": 31.4167, "color": "green", "operator": "GAFI", "totalArea": "6,000,000 sqm", "slotsStartFrom": "400 sqm", "pricePerSqm": "EGP 120/sqm/year"},
+                {"name": "Kantara East Industrial Zone", "type": "Investment", "latitude": 30.8333, "longitude": 32.3167, "color": "green", "operator": "GAFI", "totalArea": "4,200,000 sqm", "slotsStartFrom": "300 sqm", "pricePerSqm": "EGP 65/sqm/year"},
+                {"name": "New Thebes Industrial Zone", "type": "Investment", "latitude": 25.6872, "longitude": 32.6396, "color": "green", "operator": "GAFI", "totalArea": "18,000,000 sqm", "slotsStartFrom": "800 sqm", "pricePerSqm": "EGP 40/sqm/year"},
+                {"name": "Kalahun Industrial Zone", "type": "Investment", "latitude": 26.1667, "longitude": 32.7167, "color": "green", "operator": "GAFI", "totalArea": "5,500,000 sqm", "slotsStartFrom": "400 sqm", "pricePerSqm": "EGP 35/sqm/year"},
+                {"name": "Matahra Industrial Zone", "type": "Investment", "latitude": 28.1167, "longitude": 30.7500, "color": "green", "operator": "GAFI", "totalArea": "7,200,000 sqm", "slotsStartFrom": "350 sqm", "pricePerSqm": "EGP 50/sqm/year"},
+                
+                {"name": "SOKHNA360", "type": "Private", "latitude": 29.5833, "longitude": 32.3167, "color": "orange", "operator": "Elsewedy Development", "totalArea": "5,000,000 sqm", "slotsStartFrom": "2,000 sqm", "pricePerSqm": "$35/sqm/year"},
+                {"name": "Elsewedy Industrial City (EIC)", "type": "Private", "latitude": 30.3167, "longitude": 31.7833, "color": "orange", "operator": "Elsewedy Development", "totalArea": "3,500,000 sqm", "slotsStartFrom": "1,500 sqm", "pricePerSqm": "$32/sqm/year"},
+                {"name": "INDUSTRIA OCTOBER", "type": "Private", "latitude": 29.9333, "longitude": 30.9167, "color": "orange", "operator": "Elsewedy Development", "totalArea": "2,800,000 sqm", "slotsStartFrom": "1,200 sqm", "pricePerSqm": "$38/sqm/year"},
+                {"name": "INDUSTRIA SADAT", "type": "Private", "latitude": 30.3833, "longitude": 30.4333, "color": "orange", "operator": "Elsewedy Development", "totalArea": "2,200,000 sqm", "slotsStartFrom": "1,000 sqm", "pricePerSqm": "$30/sqm/year"},
+                {"name": "INDUSTRIA ASHER", "type": "Private", "latitude": 30.1167, "longitude": 31.6833, "color": "orange", "operator": "Elsewedy Development", "totalArea": "1,800,000 sqm", "slotsStartFrom": "800 sqm", "pricePerSqm": "$28/sqm/year"},
+                {"name": "INDUSTRIA BORG EL ARAB", "type": "Private", "latitude": 30.8833, "longitude": 29.6167, "color": "orange", "operator": "Elsewedy Development", "totalArea": "3,200,000 sqm", "slotsStartFrom": "1,500 sqm", "pricePerSqm": "$25/sqm/year"},
+                {"name": "IDG e² October", "type": "Private", "latitude": 29.9167, "longitude": 30.8833, "color": "orange", "operator": "IDG", "totalArea": "4,500,000 sqm", "slotsStartFrom": "2,500 sqm", "pricePerSqm": "$40/sqm/year"},
+                {"name": "IDG East Port Said", "type": "Private", "latitude": 31.2833, "longitude": 32.3500, "color": "orange", "operator": "IDG", "totalArea": "6,000,000 sqm", "slotsStartFrom": "3,000 sqm", "pricePerSqm": "$35/sqm/year"},
+                {"name": "IDG e² Alamein", "type": "Private", "latitude": 30.8333, "longitude": 28.9500, "color": "orange", "operator": "IDG", "totalArea": "8,000,000 sqm", "slotsStartFrom": "4,000 sqm", "pricePerSqm": "$28/sqm/year"},
+                {"name": "Polaris International Industrial Park", "type": "Private", "latitude": 29.9097, "longitude": 30.9746, "color": "orange", "operator": "Polaris Parks", "totalArea": "2,000,000 sqm", "slotsStartFrom": "4,500 sqm", "pricePerSqm": "EGP 2,500/sqm (sale)"},
+                {"name": "Polaris Al Zamil", "type": "Private", "latitude": 29.9200, "longitude": 30.9850, "color": "orange", "operator": "Polaris Parks + Zamil Holding", "totalArea": "1,100,000 sqm", "slotsStartFrom": "4,500 sqm", "pricePerSqm": "EGP 2,500/sqm (sale)"},
+                {"name": "Polaris Sadat City Industrial Park", "type": "Private", "latitude": 30.3833, "longitude": 30.4333, "color": "orange", "operator": "Polaris Parks", "totalArea": "1,400,000 sqm", "slotsStartFrom": "4,500 sqm", "pricePerSqm": "EGP 2,200/sqm (sale)"},
+                {"name": "Polaris New October City", "type": "Private", "latitude": 29.8800, "longitude": 30.9400, "color": "orange", "operator": "Polaris Parks", "totalArea": "2,600,000 sqm", "slotsStartFrom": "3,000 sqm", "pricePerSqm": "EGP 2,800/sqm (sale)"},
+                {"name": "Smart Village", "type": "Private", "latitude": 30.0708, "longitude": 30.9975, "color": "orange", "operator": "Smart Village Company", "totalArea": "3,000,000 sqm", "slotsStartFrom": "200 sqm", "pricePerSqm": "$45/sqm/year"},
+                {"name": "CPC Sadat City Industrial Park", "type": "Private", "latitude": 30.399167, "longitude": 30.507222, "color": "orange", "operator": "CPC Group", "totalArea": "2,500,000 sqm", "slotsStartFrom": "3,000 sqm", "pricePerSqm": "$22/sqm/year"},
+                {"name": "CPC 6th of October Industrial Park", "type": "Private", "latitude": 29.952654, "longitude": 30.921919, "color": "orange", "operator": "CPC Group", "totalArea": "2,200,000 sqm", "slotsStartFrom": "2,500 sqm", "pricePerSqm": "$28/sqm/year"}
+            ];
+
+            // Initialize map
+            const map = L.map('map').setView([28.0, 30.0], 6);
+
+            // Define map layers - FIXED MINIMAL VIEW
+            const mapLayers = {
+                osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors',
+                    maxZoom: 18,
+                }),
+                satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: '© Esri, Maxar, Earthstar Geographics',
+                    maxZoom: 18,
+                }),
+                terrain: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenTopoMap contributors',
+                    maxZoom: 17,
+                }),
+                minimal: L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '© OpenStreetMap contributors © CARTO',
+                    subdomains: 'abcd',
+                    maxZoom: 20,
+                })
+            };
+
+            // Add default layer
+            let currentLayer = mapLayers.osm;
+            currentLayer.addTo(map);
+
+            // Color mapping
+            const colorMap = {
+                'PFZ': '#3498db',
+                'SEZ': '#9b59b6',
+                'Investment': '#27ae60',
+                'Private': '#f39c12'
+            };
+
+            // Store markers and labels
+            let markers = [];
+            let markerLayer = L.layerGroup().addTo(map);
+            let labelLayer = L.layerGroup();
+            let markerCluster = L.markerClusterGroup({
+                chunkedLoading: true,
+                spiderfyOnMaxZoom: false,
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true
+            });
+
+            // Create custom icon function - ENHANCED WITH BIGGER ICONS
+            function createCustomIcon(type, color) {
+                const iconColor = colorMap[type] || '#95a5a6';
+                return L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="
+                        background: ${iconColor};
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        border: 4px solid white;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: white;
+                        font-size: 18px;
+                        font-weight: bold;
+                        position: relative;
+                        z-index: 1000;
+                    "><i class="fas fa-industry"></i></div>`,
+                    iconSize: [48, 48],
+                    iconAnchor: [24, 24]
+                });
+            }
+
+            // Create zone label - ENHANCED FOR BIGGER MARKERS
+            function createZoneLabel(zone) {
+                const cleanName = zone.name.replace(/\s*\([^)]*\)/g, '');
+                return L.divIcon({
+                    className: 'zone-label',
+                    html: `<div style="
+                        background: rgba(255, 255, 255, 0.95);
+                        border: 2px solid #667eea;
+                        border-radius: 8px;
+                        padding: 6px 10px;
+                        font-size: 12px;
+                        font-weight: bold;
+                        color: #2c3e50;
+                        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+                        white-space: nowrap;
+                        max-width: 180px;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        text-align: center;
+                    ">${cleanName}</div>`,
+                    iconSize: [null, null],
+                    iconAnchor: [0, -15]
+                });
+            }
+
+            // Create popup content
+            function createPopupContent(zone) {
+                const typeColors = {
+                    'PFZ': '#3498db',
+                    'SEZ': '#9b59b6',
+                    'Investment': '#27ae60',
+                    'Private': '#f39c12'
+                };
+                
+                const typeLabels = {
+                    'PFZ': 'Public Free Zone',
+                    'SEZ': 'Special Economic Zone',
+                    'Investment': 'Investment Zone',
+                    'Private': 'Private Industrial Park'
+                };
+
+                return `
+                    <div class="custom-popup">
+                        <div class="popup-header">
+                            <i class="fas fa-industry"></i> ${zone.name}
+                        </div>
+                        <div class="popup-content">
+                            <div class="popup-detail">
+                                <span class="popup-label">Type:</span>
+                                <span class="zone-type-badge" style="background: ${typeColors[zone.type]}; color: white;">
+                                    ${typeLabels[zone.type] || zone.type}
+                                </span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-label">Operator:</span>
+                                <span class="popup-value">${zone.operator}</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-label">Total Area:</span>
+                                <span class="popup-value">${zone.totalArea}</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-label">Slots start from:</span>
+                                <span class="popup-value">${zone.slotsStartFrom}</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-label">Price/sqm:</span>
+                                <span class="popup-value">${zone.pricePerSqm}</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-label">Coordinates:</span>
+                                <span class="popup-value">${zone.latitude.toFixed(4)}, ${zone.longitude.toFixed(4)}</span>
+                            </div>
+                            <div class="popup-detail">
+                                <span class="popup-label">Region:</span>
+                                <span class="popup-value">Egypt</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add markers to map
+            function addMarkers(data = zonesData) {
+                console.log('Adding markers, data length:', data.length);
+                markerLayer.clearLayers();
+                labelLayer.clearLayers();
+                markerCluster.clearLayers();
+                markers = [];
+
+                const showNames = document.getElementById('showNamesToggle').checked;
+                const useCluster = document.getElementById('clusterToggle').checked;
+
+                data.forEach(zone => {
+                    const marker = L.marker([zone.latitude, zone.longitude], {
+                        icon: createCustomIcon(zone.type, zone.color)
+                    }).bindPopup(createPopupContent(zone), {
+                        maxWidth: 300,
+                        className: 'custom-popup-wrapper'
+                    });
+
+                    marker.zoneData = zone;
+                    markers.push(marker);
+
+                    if (useCluster) {
+                        markerCluster.addLayer(marker);
+                    } else {
+                        markerLayer.addLayer(marker);
+                    }
+
+                    // Add zone label if enabled
+                    if (showNames) {
+                        const label = L.marker([zone.latitude, zone.longitude], {
+                            icon: createZoneLabel(zone),
+                            interactive: false
+                        });
+                        labelLayer.addLayer(label);
+                    }
+                });
+
+                if (useCluster) {
+                    map.addLayer(markerCluster);
+                    map.removeLayer(markerLayer);
+                } else {
+                    map.addLayer(markerLayer);
+                    map.removeLayer(markerCluster);
+                }
+
+                if (showNames) {
+                    map.addLayer(labelLayer);
+                } else {
+                    map.removeLayer(labelLayer);
+                }
+
+                // Update visible count
+                document.getElementById('visibleCount').textContent = data.length;
+            }
+
+            // Map view switching
+            function switchMapView(viewType) {
+                console.log("Switching to view:", viewType);
+                if (currentLayer) {
+                    map.removeLayer(currentLayer);
+                }
+                currentLayer = mapLayers[viewType];
+                if (currentLayer) {
+                    currentLayer.addTo(map);
+                    console.log("View switched to:", viewType);
+                } else {
+                    console.error("Layer not found for view type:", viewType);
+                }
+
+                // Update active view option
+                document.querySelectorAll('.view-option').forEach(option => {
+                    option.classList.remove('active');
+                });
+                const activeOption = document.querySelector(`[data-view="${viewType}"]`);
+                if (activeOption) {
+                    activeOption.classList.add('active');
+                }
+            }
+
+            // Filter functionality
+            function filterZones(type) {
+                console.log('Filtering zones by type:', type);
+                let filteredData = zonesData;
+                
+                if (type !== 'all') {
+                    filteredData = zonesData.filter(zone => zone.type === type);
+                }
+                
+                addMarkers(filteredData);
+                
+                // Update legend active state
+                document.querySelectorAll('.legend-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                const activeItem = document.querySelector(`[data-type="${type}"]`);
+                if (activeItem) {
+                    activeItem.classList.add('active');
+                }
+            }
+
+            // Search functionality
+            function searchZones(query) {
+                console.log('Searching zones with query:', query);
+                const filteredData = zonesData.filter(zone => 
+                    zone.name.toLowerCase().includes(query.toLowerCase()) ||
+                    zone.operator.toLowerCase().includes(query.toLowerCase())
+                );
+                addMarkers(filteredData);
+            }
+
+            // Initialize markers
+            addMarkers();
+
+            // Map view options - COMPLETELY REWRITTEN
+            document.querySelectorAll('.view-option').forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Map view option clicked:", this.textContent.trim());
+                    const viewType = this.getAttribute('data-view');
+                    console.log("View type:", viewType);
+                    if (viewType && mapLayers[viewType]) {
+                        switchMapView(viewType);
+                    } else {
+                        console.error("Invalid view type or layer not found:", viewType);
+                    }
+                });
+            });
+
+            // Show names toggle - REWRITTEN
+            const showNamesToggle = document.getElementById('showNamesToggle');
+            if (showNamesToggle) {
+                showNamesToggle.addEventListener('change', function() {
+                    console.log("Show names toggle changed:", this.checked);
+                    addMarkers();
+                });
+            }
+
+            // Cluster toggle - REWRITTEN
+            const clusterToggle = document.getElementById('clusterToggle');
+            if (clusterToggle) {
+                clusterToggle.addEventListener('change', function() {
+                    console.log("Cluster toggle changed:", this.checked);
+                    addMarkers();
+                });
+            }
+
+            // Legend click events
+            document.querySelectorAll('.legend-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const type = this.getAttribute('data-type');
+                    console.log('Legend item clicked:', type);
+                    filterZones(type);
+                });
+            });
+
+            // Search input
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value;
+                    if (query.length === 0) {
+                        addMarkers();
+                    } else {
+                        searchZones(query);
+                    }
+                });
+            }
+
+            // Sidebar toggle
+            window.toggleSidebar = function() {
+                const sidebar = document.getElementById('sidebar');
+                const mapContainer = document.getElementById('mapContainer');
+                
+                sidebar.classList.toggle('collapsed');
+                mapContainer.classList.toggle('expanded');
+                
+                // Invalidate map size after animation
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 300);
+            }
+
+            // Mobile responsiveness
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.add('collapsed');
+                document.getElementById('mapContainer').classList.add('expanded');
+            }
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                map.invalidateSize();
+            });
+
+            console.log('Map initialization complete');
+        });
+    </script>
+</body>
+</html>
+
