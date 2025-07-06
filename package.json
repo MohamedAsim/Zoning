@@ -1,0 +1,12 @@
+{
+  "name": "zoning",
+  "version": "1.0.0",
+  "description": "Zoning map",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "jest": "^29.6.1"
+  }
+}
