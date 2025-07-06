@@ -449,11 +449,11 @@
 
                 <div class="stats-grid">
                     <div class="stats-card">
-                        <div class="stats-number">35</div>
+                        <div class="stats-number">42</div>
                         <div class="stats-label">Total Zones</div>
                     </div>
                     <div class="stats-card">
-                        <div class="stats-number" id="visibleCount">35</div>
+                        <div class="stats-number" id="visibleCount">42</div>
                         <div class="stats-label">Visible</div>
                     </div>
                 </div>
@@ -504,12 +504,12 @@
                     <div class="legend-item active" data-type="all">
                         <div class="legend-color" style="background: linear-gradient(45deg, #3498db, #9b59b6, #27ae60, #f39c12);"></div>
                         <span class="legend-text">All Zones</span>
-                        <span class="legend-count">35</span>
+                        <span class="legend-count">42</span>
                     </div>
                     <div class="legend-item" data-type="PFZ">
                         <div class="legend-color" style="background: #3498db;"></div>
                         <span class="legend-text">Public Free Zones</span>
-                        <span class="legend-count">8</span>
+                        <span class="legend-count">7</span>
                     </div>
                     <div class="legend-item" data-type="SEZ">
                         <div class="legend-color" style="background: #9b59b6;"></div>
@@ -524,7 +524,7 @@
                     <div class="legend-item" data-type="Private">
                         <div class="legend-color" style="background: #f39c12;"></div>
                         <span class="legend-text">Private Industrial Parks</span>
-                        <span class="legend-count">10</span>
+                        <span class="legend-count">18</span>
                     </div>
                 </div>
             </div>
@@ -541,58 +541,13 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     
+    <script src="zonesData.js"></script>
     <script>
         // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing map...');
             
-            // Zone data - UPDATED WITH CORRECTED POLARIS ZONES, REMOVED SPECIFIED ZONES, AND VALIDATED PRICING
-            const zonesData = [
-                {"name": "Alexandria Free Zone", "type": "PFZ", "latitude": 31.2001, "longitude": 29.9187, "color": "blue", "operator": "GAFI", "totalArea": "2,300,000 sqm", "slotsStartFrom": "500 sqm", "pricePerSqm": "$15/sqm/year"},
-                {"name": "Cairo Free Zone", "type": "PFZ", "latitude": 30.0444, "longitude": 31.2357, "color": "blue", "operator": "GAFI", "totalArea": "1,800,000 sqm", "slotsStartFrom": "300 sqm", "pricePerSqm": "$18/sqm/year"},
-                {"name": "Port Said Free Zone", "type": "PFZ", "latitude": 31.2653, "longitude": 32.3019, "color": "blue", "operator": "GAFI", "totalArea": "3,500,000 sqm", "slotsStartFrom": "400 sqm", "pricePerSqm": "$12/sqm/year"},
-                {"name": "Suez Free Zone", "type": "PFZ", "latitude": 29.9668, "longitude": 32.5498, "color": "blue", "operator": "GAFI", "totalArea": "2,800,000 sqm", "slotsStartFrom": "600 sqm", "pricePerSqm": "$10/sqm/year"},
-                {"name": "Damietta Free Zone", "type": "PFZ", "latitude": 31.4165, "longitude": 31.8133, "color": "blue", "operator": "GAFI", "totalArea": "1,200,000 sqm", "slotsStartFrom": "250 sqm", "pricePerSqm": "$8/sqm/year"},
-                {"name": "Ismailia Free Zone", "type": "PFZ", "latitude": 30.5965, "longitude": 32.2715, "color": "blue", "operator": "GAFI", "totalArea": "900,000 sqm", "slotsStartFrom": "200 sqm", "pricePerSqm": "$7/sqm/year"},
-                {"name": "Nasr City Free Zone", "type": "PFZ", "latitude": 30.0626, "longitude": 31.3219, "color": "blue", "operator": "GAFI", "totalArea": "800,000 sqm", "slotsStartFrom": "150 sqm", "pricePerSqm": "$25/sqm/year"},
-                {"name": "Media Production City Free Zone", "type": "PFZ", "latitude": 30.0131, "longitude": 31.2089, "color": "blue", "operator": "GAFI", "totalArea": "1,600,000 sqm", "slotsStartFrom": "100 sqm", "pricePerSqm": "$30/sqm/year"},
-                
-                {"name": "Suez Canal Economic Zone", "type": "SEZ", "latitude": 30.8025, "longitude": 32.3, "color": "purple", "operator": "SCZone Authority", "totalArea": "460,000,000 sqm", "slotsStartFrom": "5,000 sqm", "pricePerSqm": "$12/sqm/year"},
-                {"name": "Golden Triangle SEZ", "type": "SEZ", "latitude": 26.8206, "longitude": 31.8025, "color": "purple", "operator": "GAFI", "totalArea": "2,000,000,000 sqm", "slotsStartFrom": "10,000 sqm", "pricePerSqm": "$5/sqm/year"},
-                {"name": "East Port Said SEZ", "type": "SEZ", "latitude": 31.2889, "longitude": 32.3262, "color": "purple", "operator": "SCZone Authority", "totalArea": "40,000,000 sqm", "slotsStartFrom": "3,000 sqm", "pricePerSqm": "$15/sqm/year"},
-                {"name": "Ain Sokhna SEZ", "type": "SEZ", "latitude": 29.6000, "longitude": 32.3500, "color": "purple", "operator": "SCZone Authority", "totalArea": "22,000,000 sqm", "slotsStartFrom": "2,000 sqm", "pricePerSqm": "$18/sqm/year"},
-                
-                {"name": "10th of Ramadan Industrial City", "type": "Investment", "latitude": 30.3128, "longitude": 31.7421, "color": "green", "operator": "GAFI", "totalArea": "230,000,000 sqm", "slotsStartFrom": "1,000 sqm", "pricePerSqm": "EGP 80/sqm/year"},
-                {"name": "6th of October Industrial City", "type": "Investment", "latitude": 29.9097, "longitude": 30.9746, "color": "green", "operator": "GAFI", "totalArea": "119,000,000 sqm", "slotsStartFrom": "800 sqm", "pricePerSqm": "EGP 100/sqm/year"},
-                {"name": "Sadat Industrial City", "type": "Investment", "latitude": 30.3667, "longitude": 30.4167, "color": "green", "operator": "GAFI", "totalArea": "45,000,000 sqm", "slotsStartFrom": "600 sqm", "pricePerSqm": "EGP 70/sqm/year"},
-                {"name": "Badr Industrial City", "type": "Investment", "latitude": 30.1833, "longitude": 31.7167, "color": "green", "operator": "GAFI", "totalArea": "35,000,000 sqm", "slotsStartFrom": "500 sqm", "pricePerSqm": "EGP 85/sqm/year"},
-                {"name": "Borg El Arab Industrial City", "type": "Investment", "latitude": 30.9167, "longitude": 29.6333, "color": "green", "operator": "GAFI", "totalArea": "28,000,000 sqm", "slotsStartFrom": "700 sqm", "pricePerSqm": "EGP 60/sqm/year"},
-                {"name": "Ameriya Industrial Zone", "type": "Investment", "latitude": 31.0065, "longitude": 29.8150, "color": "green", "operator": "GAFI", "totalArea": "12,000,000 sqm", "slotsStartFrom": "400 sqm", "pricePerSqm": "EGP 55/sqm/year"},
-                {"name": "Dashlut Industrial Zone", "type": "Investment", "latitude": 27.1833, "longitude": 31.1667, "color": "green", "operator": "GAFI", "totalArea": "8,500,000 sqm", "slotsStartFrom": "300 sqm", "pricePerSqm": "EGP 45/sqm/year"},
-                {"name": "15th Of May City Industrial Zone", "type": "Investment", "latitude": 29.8667, "longitude": 31.2833, "color": "green", "operator": "GAFI", "totalArea": "15,000,000 sqm", "slotsStartFrom": "500 sqm", "pricePerSqm": "EGP 110/sqm/year"},
-                {"name": "Katameya Industrial Zone", "type": "Investment", "latitude": 29.9833, "longitude": 31.4167, "color": "green", "operator": "GAFI", "totalArea": "6,000,000 sqm", "slotsStartFrom": "400 sqm", "pricePerSqm": "EGP 120/sqm/year"},
-                {"name": "Kantara East Industrial Zone", "type": "Investment", "latitude": 30.8333, "longitude": 32.3167, "color": "green", "operator": "GAFI", "totalArea": "4,200,000 sqm", "slotsStartFrom": "300 sqm", "pricePerSqm": "EGP 65/sqm/year"},
-                {"name": "New Thebes Industrial Zone", "type": "Investment", "latitude": 25.6872, "longitude": 32.6396, "color": "green", "operator": "GAFI", "totalArea": "18,000,000 sqm", "slotsStartFrom": "800 sqm", "pricePerSqm": "EGP 40/sqm/year"},
-                {"name": "Kalahun Industrial Zone", "type": "Investment", "latitude": 26.1667, "longitude": 32.7167, "color": "green", "operator": "GAFI", "totalArea": "5,500,000 sqm", "slotsStartFrom": "400 sqm", "pricePerSqm": "EGP 35/sqm/year"},
-                {"name": "Matahra Industrial Zone", "type": "Investment", "latitude": 28.1167, "longitude": 30.7500, "color": "green", "operator": "GAFI", "totalArea": "7,200,000 sqm", "slotsStartFrom": "350 sqm", "pricePerSqm": "EGP 50/sqm/year"},
-                
-                {"name": "SOKHNA360", "type": "Private", "latitude": 29.5833, "longitude": 32.3167, "color": "orange", "operator": "Elsewedy Development", "totalArea": "5,000,000 sqm", "slotsStartFrom": "2,000 sqm", "pricePerSqm": "$35/sqm/year"},
-                {"name": "Elsewedy Industrial City (EIC)", "type": "Private", "latitude": 30.3167, "longitude": 31.7833, "color": "orange", "operator": "Elsewedy Development", "totalArea": "3,500,000 sqm", "slotsStartFrom": "1,500 sqm", "pricePerSqm": "$32/sqm/year"},
-                {"name": "INDUSTRIA OCTOBER", "type": "Private", "latitude": 29.9333, "longitude": 30.9167, "color": "orange", "operator": "Elsewedy Development", "totalArea": "2,800,000 sqm", "slotsStartFrom": "1,200 sqm", "pricePerSqm": "$38/sqm/year"},
-                {"name": "INDUSTRIA SADAT", "type": "Private", "latitude": 30.3833, "longitude": 30.4333, "color": "orange", "operator": "Elsewedy Development", "totalArea": "2,200,000 sqm", "slotsStartFrom": "1,000 sqm", "pricePerSqm": "$30/sqm/year"},
-                {"name": "INDUSTRIA ASHER", "type": "Private", "latitude": 30.1167, "longitude": 31.6833, "color": "orange", "operator": "Elsewedy Development", "totalArea": "1,800,000 sqm", "slotsStartFrom": "800 sqm", "pricePerSqm": "$28/sqm/year"},
-                {"name": "INDUSTRIA BORG EL ARAB", "type": "Private", "latitude": 30.8833, "longitude": 29.6167, "color": "orange", "operator": "Elsewedy Development", "totalArea": "3,200,000 sqm", "slotsStartFrom": "1,500 sqm", "pricePerSqm": "$25/sqm/year"},
-                {"name": "IDG e² October", "type": "Private", "latitude": 29.9167, "longitude": 30.8833, "color": "orange", "operator": "IDG", "totalArea": "4,500,000 sqm", "slotsStartFrom": "2,500 sqm", "pricePerSqm": "$40/sqm/year"},
-                {"name": "IDG East Port Said", "type": "Private", "latitude": 31.2833, "longitude": 32.3500, "color": "orange", "operator": "IDG", "totalArea": "6,000,000 sqm", "slotsStartFrom": "3,000 sqm", "pricePerSqm": "$35/sqm/year"},
-                {"name": "IDG e² Alamein", "type": "Private", "latitude": 30.8333, "longitude": 28.9500, "color": "orange", "operator": "IDG", "totalArea": "8,000,000 sqm", "slotsStartFrom": "4,000 sqm", "pricePerSqm": "$28/sqm/year"},
-                {"name": "Polaris International Industrial Park", "type": "Private", "latitude": 29.9097, "longitude": 30.9746, "color": "orange", "operator": "Polaris Parks", "totalArea": "2,000,000 sqm", "slotsStartFrom": "4,500 sqm", "pricePerSqm": "EGP 2,500/sqm (sale)"},
-                {"name": "Polaris Al Zamil", "type": "Private", "latitude": 29.9200, "longitude": 30.9850, "color": "orange", "operator": "Polaris Parks + Zamil Holding", "totalArea": "1,100,000 sqm", "slotsStartFrom": "4,500 sqm", "pricePerSqm": "EGP 2,500/sqm (sale)"},
-                {"name": "Polaris Sadat City Industrial Park", "type": "Private", "latitude": 30.3833, "longitude": 30.4333, "color": "orange", "operator": "Polaris Parks", "totalArea": "1,400,000 sqm", "slotsStartFrom": "4,500 sqm", "pricePerSqm": "EGP 2,200/sqm (sale)"},
-                {"name": "Polaris New October City", "type": "Private", "latitude": 29.8800, "longitude": 30.9400, "color": "orange", "operator": "Polaris Parks", "totalArea": "2,600,000 sqm", "slotsStartFrom": "3,000 sqm", "pricePerSqm": "EGP 2,800/sqm (sale)"},
-                {"name": "Smart Village", "type": "Private", "latitude": 30.0708, "longitude": 30.9975, "color": "orange", "operator": "Smart Village Company", "totalArea": "3,000,000 sqm", "slotsStartFrom": "200 sqm", "pricePerSqm": "$45/sqm/year"},
-                {"name": "CPC Sadat City Industrial Park", "type": "Private", "latitude": 30.399167, "longitude": 30.507222, "color": "orange", "operator": "CPC Group", "totalArea": "2,500,000 sqm", "slotsStartFrom": "3,000 sqm", "pricePerSqm": "$22/sqm/year"},
-                {"name": "CPC 6th of October Industrial Park", "type": "Private", "latitude": 29.952654, "longitude": 30.921919, "color": "orange", "operator": "CPC Group", "totalArea": "2,200,000 sqm", "slotsStartFrom": "2,500 sqm", "pricePerSqm": "$28/sqm/year"}
-            ];
+            // zonesData loaded from external file
 
             // Initialize map
             const map = L.map('map').setView([28.0, 30.0], 6);
